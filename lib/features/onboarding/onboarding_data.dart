@@ -1,32 +1,29 @@
 class OnboardingData {
-  final String title;
-  final String description;
+  final String titleKey;
+  final String descriptionKey;
   final String imagePath;
 
   OnboardingData({
-    required this.title,
-    required this.description,
+    required this.titleKey,
+    required this.descriptionKey,
     required this.imagePath,
   });
 }
 
 final onboardingItems = [
   OnboardingData(
-    title: 'Capture your best catch',
-    description:
-        'Snap a photo of your fishing haul right after your trip and share it instantly.',
-    imagePath: 'assets/images/fish1.png',
+    titleKey: 'onboarding.title1',
+    descriptionKey: 'onboarding.desc1',
+    imagePath: 'lib/assets/images/fish.png',
   ),
   OnboardingData(
-    title: 'Share with friends',
-    description:
-        'Let your fishing buddies see your latest catch and celebrate with you.',
-    imagePath: 'assets/images/fish2.png',
+    titleKey: 'onboarding.title2',
+    descriptionKey: 'onboarding.desc2',
+    imagePath: 'lib/assets/images/fish2.jpg',
   ),
   OnboardingData(
-    title: 'Discover and react',
-    description:
-        'Browse your friends’ catches and leave reactions on their posts.',
-    imagePath: 'assets/images/fish3.png',
+    titleKey: 'onboarding.title3',
+    descriptionKey: 'onboarding.desc3',
+    imagePath: 'lib/assets/images/fish3.png',
   ),
 ];
