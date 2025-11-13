@@ -13,27 +13,35 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
 
-  bool get _canContinue => _nameController.text.trim().length >= 2;
+  bool get _canContinue =>
+      _nameController.text.trim().length >= 2 && _phoneController.text.trim().length >= 6;
 
   @override
   void initState() {
     super.initState();
     _nameController.addListener(() => setState(() {}));
+    _phoneController.addListener(() => setState(() {}));
   }
 
   @override
   void dispose() {
     _nameController.dispose();
+    _phoneController.dispose();
     super.dispose();
   }
 
   void _openHome(BuildContext context) {
     final name = _nameController.text.trim();
+    final phone = _phoneController.text.trim();
+    final l10n = AppLocalizations.of(context);
+    final friendlyName = name.isEmpty ? l10n.t('home.feed.defaultName') : name;
+
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) =>
-            HomeScreen(displayName: name.isEmpty ? 'Fish Friend' : name),
+            HomeScreen(displayName: friendlyName, phoneNumber: phone),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return FadeTransition(opacity: animation, child: child);
         },
@@ -114,6 +122,15 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 const Spacer(),
+                TextField(
+                  controller: _phoneController,
+                  keyboardType: TextInputType.phone,
+                  decoration: InputDecoration(
+                    labelText: l10n.t('login.phonePrompt'),
+                    hintText: l10n.t('login.phoneHint'),
+                  ),
+                ),
+                const SizedBox(height: 16),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(

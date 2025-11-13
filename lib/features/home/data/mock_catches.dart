@@ -21,6 +21,9 @@ final List<CatchPost> mockCatches = [
     },
     tags: const ['Catch & Release', 'Leurre souple', 'Matin brumeux'],
     isLive: true,
+    species: 'Brochet',
+    weightKg: 4.7,
+    lengthCm: 85,
   ),
   CatchPost(
     id: 'catch-002',
@@ -38,6 +41,9 @@ final List<CatchPost> mockCatches = [
       ReactionType.clap: 7,
     },
     tags: const ['Sunset', 'Bar', 'Ocean'],
+    species: 'Bar',
+    weightKg: 3.1,
+    lengthCm: 62,
   ),
   CatchPost(
     id: 'catch-003',
@@ -55,6 +61,9 @@ final List<CatchPost> mockCatches = [
       ReactionType.clap: 14,
     },
     tags: const ['Session nuit', 'Team SnapFish'],
+    species: 'Carpe miroir',
+    weightKg: 12,
+    lengthCm: 90,
   ),
   CatchPost(
     id: 'catch-004',
@@ -71,5 +80,8 @@ final List<CatchPost> mockCatches = [
       ReactionType.clap: 11,
     },
     tags: const ['Plongee', 'Mediterranee'],
+    species: 'Merou',
+    weightKg: 6.2,
+    lengthCm: 72,
   ),
 ];

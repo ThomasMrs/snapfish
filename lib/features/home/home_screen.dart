@@ -1,14 +1,22 @@
 import 'package:flutter/material.dart';
 
+import 'dart:io';
+
 import '../../core/app_colors.dart';
 import '../../core/localization/app_localizations.dart';
 import 'data/mock_catches.dart';
 import 'models/catch_post.dart';
+import 'new_catch_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key, required this.displayName});
+  const HomeScreen({
+    super.key,
+    required this.displayName,
+    required this.phoneNumber,
+  });
 
   final String displayName;
+  final String phoneNumber;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -17,6 +25,13 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
   final Map<String, ReactionType> _userReactions = {};
+  late List<CatchPost> _catches;
+
+  @override
+  void initState() {
+    super.initState();
+    _catches = List<CatchPost>.from(mockCatches);
+  }
 
   void _onReaction(String postId, ReactionType reaction) {
     setState(() {
@@ -26,6 +41,30 @@ class _HomeScreenState extends State<HomeScreen> {
         _userReactions[postId] = reaction;
       }
     });
+  }
+
+  Future<void> _openNewCatch(BuildContext context) async {
+    final newCatch = await Navigator.of(context).push<CatchPost>(
+      MaterialPageRoute(
+        builder: (_) => NewCatchScreen(
+          anglerName: widget.displayName,
+        ),
+      ),
+    );
+
+    if (newCatch != null) {
+      setState(() {
+        _catches.insert(0, newCatch);
+      });
+    }
+  }
+
+  int _reactionCount() {
+    final base = _catches.fold<int>(
+      0,
+      (total, post) => total + post.reactions.values.fold<int>(0, (sum, value) => sum + value),
+    );
+    return base + _userReactions.length;
   }
 
   @override
@@ -39,7 +78,7 @@ class _HomeScreenState extends State<HomeScreen> {
         child: _selectedIndex == 0
             ? FloatingActionButton.extended(
                 key: const ValueKey('feed-fab'),
-                onPressed: () {},
+                onPressed: () => _openNewCatch(context),
                 icon: const Icon(Icons.add_a_photo_rounded),
                 label: Text(l10n.t('home.fab')),
               )
@@ -84,12 +123,18 @@ class _HomeScreenState extends State<HomeScreen> {
           child: _selectedIndex == 0
               ? _FeedView(
                   displayName: widget.displayName,
+                  catches: _catches,
                   userReactions: _userReactions,
                   onReaction: _onReaction,
                 )
               : _selectedIndex == 1
                   ? const _CollectView()
-                  : _ProfileView(displayName: widget.displayName),
+                  : _ProfileView(
+                      displayName: widget.displayName,
+                      phoneNumber: widget.phoneNumber,
+                      catches: _catches,
+                      totalReactions: _reactionCount(),
+                    ),
         ),
       ),
     );
@@ -99,11 +144,13 @@ class _HomeScreenState extends State<HomeScreen> {
 class _FeedView extends StatelessWidget {
   const _FeedView({
     required this.displayName,
+    required this.catches,
     required this.userReactions,
     required this.onReaction,
   });
 
   final String displayName;
+  final List<CatchPost> catches;
   final Map<String, ReactionType> userReactions;
   final void Function(String, ReactionType) onReaction;
 
@@ -126,7 +173,7 @@ class _FeedView extends StatelessWidget {
           style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 16),
-        ...mockCatches.map(
+        ...catches.map(
           (post) => Padding(
             padding: const EdgeInsets.only(bottom: 20),
             child: _CatchCard(
@@ -282,7 +329,7 @@ class _CatchCard extends StatelessWidget {
     final difference = now.difference(date);
 
     if (difference.inMinutes < 1) {
-      return 'À l’instant';
+            return "A l'instant";
     } else if (difference.inMinutes < 60) {
       return 'Il y a ${difference.inMinutes} min';
     } else if (difference.inHours < 24) {
@@ -364,12 +411,7 @@ class _CatchCard extends StatelessWidget {
                 tag: 'catch-${post.id}',
                 child: Stack(
                   children: [
-                    Image.asset(
-                      post.imagePath,
-                      height: 190,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                    ),
+                    _CatchImage(post: post),
                     Positioned(
                       bottom: 12,
                       left: 12,
@@ -394,29 +436,55 @@ class _CatchCard extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              post.catchDescription,
-              style: theme.textTheme.bodyMedium,
+              post.species,
+              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
             ),
-            const SizedBox(height: 14),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: post.tags
-                  .map(
-                    (tag) => Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: AppColors.surfaceAlt,
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                      child: Text(
-                        '#$tag',
-                        style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
-                      ),
+            if (post.weightKg != null || post.lengthCm != null) ...[
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                children: [
+                  if (post.weightKg != null)
+                    _MetricChip(
+                      icon: Icons.monitor_weight_outlined,
+                      label: '${post.weightKg!.toStringAsFixed(1)} kg',
                     ),
-                  )
-                  .toList(),
-            ),
+                  if (post.lengthCm != null)
+                    _MetricChip(
+                      icon: Icons.straighten,
+                      label: '${post.lengthCm!.toStringAsFixed(0)} cm',
+                    ),
+                ],
+              ),
+            ],
+            if (post.catchDescription.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text(
+                post.catchDescription,
+                style: theme.textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 14),
+            ],
+            if (post.tags.isNotEmpty)
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: post.tags
+                    .map(
+                      (tag) => Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceAlt,
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                        child: Text(
+                          '#$tag',
+                          style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+                        ),
+                      ),
+                    )
+                    .toList(),
+              ),
             const SizedBox(height: 18),
             _ReactionBar(
               post: post,
@@ -425,6 +493,69 @@ class _CatchCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _CatchImage extends StatelessWidget {
+  const _CatchImage({required this.post});
+
+  final CatchPost post;
+
+  @override
+  Widget build(BuildContext context) {
+    final Widget imageWidget;
+    if (post.isAssetImage) {
+      imageWidget = Image.asset(
+        post.imagePath,
+        height: 190,
+        width: double.infinity,
+        fit: BoxFit.cover,
+      );
+    } else {
+      imageWidget = Image.file(
+        File(post.imagePath),
+        height: 190,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            height: 190,
+            width: double.infinity,
+            color: AppColors.surfaceAlt,
+            alignment: Alignment.center,
+            child: const Icon(Icons.broken_image_outlined, color: Colors.white54),
+          );
+        },
+      );
+    }
+
+    return imageWidget;
+  }
+}
+
+class _MetricChip extends StatelessWidget {
+  const _MetricChip({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceAlt,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: AppColors.accent),
+          const SizedBox(width: 6),
+          Text(label),
+        ],
       ),
     );
   }
@@ -540,20 +671,31 @@ class _CollectView extends StatelessWidget {
 }
 
 class _ProfileView extends StatelessWidget {
-  const _ProfileView({required this.displayName});
+  const _ProfileView({
+    required this.displayName,
+    required this.phoneNumber,
+    required this.catches,
+    required this.totalReactions,
+  });
 
   final String displayName;
+  final String phoneNumber;
+  final List<CatchPost> catches;
+  final int totalReactions;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
-    final friendlyName = displayName.isEmpty ? 'Fish Friend' : displayName;
+    final friendlyName = displayName.isEmpty ? l10n.t('home.feed.defaultName') : displayName;
 
     final stats = [
-      _ProfileStat(label: l10n.t('home.stats.catches'), value: '24'),
-      _ProfileStat(label: l10n.t('home.stats.sessions'), value: '12'),
-      _ProfileStat(label: l10n.t('home.stats.reactions'), value: '156'),
+      _ProfileStat(label: l10n.t('home.stats.catches'), value: catches.length.toString()),
+      _ProfileStat(
+        label: l10n.t('home.stats.sessions'),
+        value: (catches.length ~/ 2 + 1).toString(),
+      ),
+      _ProfileStat(label: l10n.t('home.stats.reactions'), value: totalReactions.toString()),
     ];
 
     return ListView(
@@ -580,6 +722,20 @@ class _ProfileView extends StatelessWidget {
                 l10n.t('home.profile.subtitle'),
                 style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
               ),
+              if (phoneNumber.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.phone_rounded, size: 16, color: AppColors.accent),
+                    const SizedBox(width: 6),
+                    Text(
+                      '${l10n.t('home.profile.phoneLabel')} : $phoneNumber',
+                      style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+                    ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),

@@ -43,6 +43,10 @@ class CatchPost {
     required this.caughtAt,
     required this.reactions,
     required this.tags,
+    required this.species,
+    this.weightKg,
+    this.lengthCm,
+    this.isAssetImage = true,
     this.isLive = false,
   });
 
@@ -57,6 +61,10 @@ class CatchPost {
   final DateTime caughtAt;
   final Map<ReactionType, int> reactions;
   final List<String> tags;
+  final String species;
+  final double? weightKg;
+  final double? lengthCm;
+  final bool isAssetImage;
   final bool isLive;
 
   CatchPost copyWith({
@@ -74,6 +82,10 @@ class CatchPost {
       caughtAt: caughtAt,
       reactions: reactions ?? this.reactions,
       tags: tags,
+      species: species,
+      weightKg: weightKg,
+      lengthCm: lengthCm,
+      isAssetImage: isAssetImage,
       isLive: isLive,
     );
   }
